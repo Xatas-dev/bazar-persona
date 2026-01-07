@@ -1,0 +1,174 @@
+openapi: 3.0.3
+info:
+  title: Bazar Persona API
+  description: Service responsible for managing user profiles, avatars, and personal details within the Bazar ecosystem.
+  version: 0.0.1
+servers:
+  - url: http://localhost:8081
+    description: Local Development
+
+tags:
+  - name: Bazar Users
+    description: Operations related to the users
+
+paths:
+  # ==========================================
+  # 1. Get & Edit Current User
+  # ==========================================
+  /users/iam:
+    get:
+      tags:
+        - Bazar Users
+      summary: Get my profile
+      description: Retrieves the profile of the currently authenticated user based on the JWT token.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDtoResponse'
+        '401':
+          description: Unauthorized (Token missing or invalid)
+
+    patch:
+      tags:
+        - Bazar Users
+      summary: Update my profile
+      description: Update mutable fields of the current user's profile. All fields are optional.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileDtoRequest'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDtoResponse'
+        '400':
+          description: Invalid input data
+        '401':
+          description: Unauthorized
+
+
+  # ==========================================
+  # 3. Batch Get Users (For Lists/Feeds)
+  # ==========================================
+  /users:
+    get:
+      tags:
+        - Bazar Users
+      summary: Get users
+      description: Retrieve a list of users based on filter criteria.
+      parameters:
+        - name: requestDto
+          in: query
+          required: false # The object itself is optional
+          schema:
+            $ref: '#/components/schemas/GetUsersDtoRequest'
+      responses:
+        '200':
+          description: List of users found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDtoResponse'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # --------------------------------------
+    # Request Objects
+    # --------------------------------------
+    UpdateProfileDtoRequest:
+      type: object
+      properties:
+        userName:
+          type: string
+          maxLength: 128
+          example: "merchant_king_99"
+          description: Display name of the user
+        firstName:
+          type: string
+          maxLength: 128
+          example: "John"
+        lastName:
+          type: string
+          maxLength: 128
+          example: "Doe"
+
+    # --------------------------------------
+    # Response Objects
+    # --------------------------------------
+    UserDtoResponse:
+      type: object
+      required:
+        - id
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier (Matches Keycloak ID)
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        userName:
+          type: string
+          nullable: true
+          example: "merchant_king_99"
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: "john@bazar.org"
+        firstName:
+          type: string
+          nullable: true
+          example: "John"
+        lastName:
+          type: string
+          nullable: true
+          example: "Doe"
+        userPic:
+          type: string
+          nullable: true
+          description: URL to avatar
+          example: "https://cdn.bazar.org/avatars/default.png"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-10-05T15:30:00Z"
+    # The new wrapper object
+    GetUsersDtoRequest:
+      type: object
+      description: Filter criteria for fetching users
+      properties:
+        ids:
+          type: array
+          description: Filter by specific IDs
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+        search:
+          type: string
+          description: Search by username
+          minLength: 3

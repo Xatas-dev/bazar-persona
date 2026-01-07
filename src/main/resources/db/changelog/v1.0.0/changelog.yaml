@@ -1,0 +1,4 @@
+databaseChangeLog:
+  - include:
+      file: 20251129-00-0-create-bazar-user-table.sql
+      relativeToChangelogFile: true
