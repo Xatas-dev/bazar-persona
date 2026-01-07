@@ -8,8 +8,8 @@ create table bazar_user(
     email varchar(128),
     first_name varchar(128),
     last_name varchar(128),
-    created_at timestamp not null default now(),
-    updated_at timestamp not null default now()
+    created_at timestamp with time zone not null default now(),
+    updated_at timestamp with time zone not null default now()
 );
 
 comment on column bazar_user.id IS 'User id from IDP';
