@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "org.bazar"
-version = "0.0.1"
+version = "1.0.0"
 description = "bazar-persona"
 
 java {
@@ -31,6 +31,7 @@ dependencies {
     implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("io.github.oshai:kotlin-logging-jvm:5.1.0")
     implementation("org.springframework.boot:spring-boot-starter-liquibase")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
     runtimeOnly("org.postgresql:postgresql")
     testImplementation("org.springframework.boot:spring-boot-starter-data-jpa-test")
     testImplementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server-test")
