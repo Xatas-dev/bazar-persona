@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "org.bazar"
-version = "0.0.1-SNAPSHOT"
+version = "0.0.1"
 description = "bazar-persona"
 
 java {

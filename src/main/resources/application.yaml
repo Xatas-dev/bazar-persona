@@ -1,8 +1,8 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/bzrpersona
-    username: postgres
-    password: postgres
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
   liquibase:
     change-log: db/changelog/changelog-master.yaml
   jpa:
@@ -13,7 +13,8 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:9999/realms/bazar-realm
+          issuer-uri: ${KC_EXTERNAL_URL}/realms/${KC_REALM}
+          jwk-set-uri: ${KC_URL}/realms/${KC_REALM}/protocol/openid-connect/certs
 server:
   servlet:
     context-path: /api
@@ -22,5 +23,4 @@ server:
 logging:
   level:
     org:
-      springframework:
-        security: trace
+      bazar: ${LOGGING_LEVEL}

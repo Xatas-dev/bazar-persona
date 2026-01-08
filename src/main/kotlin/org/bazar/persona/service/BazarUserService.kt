@@ -30,6 +30,7 @@ class BazarUserService(
         val userId = token.claims["sub"].toString()
         return bazarUserRepository.findById(userId.toUuid())
             .orElseGet {
+                logger.info { "Haven't found user, saving new from jwt token, userId = $userId" }
                 bazarUserRepository.save(
                     BazarUser(
                         id = userId.toUuid(),
@@ -46,9 +47,12 @@ class BazarUserService(
         if (requestDto == null || (requestDto.ids == null && requestDto.search == null))
             return emptyList()
 
-        if (requestDto.ids != null)
+        if (requestDto.ids != null){
+            logger.info { "Get user request contain ids field, proceeding exact match by ids: ${requestDto.ids}" }
             return bazarUserRepository.findByIdIn(requestDto.ids).map { it.toUserDtoResponse() }
+        }
 
+        logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.search}" }
         return bazarUserRepository.findFirst10ByUserNameContainsIgnoreCase(
             requestDto.search ?: ""
         )
@@ -63,7 +67,7 @@ class BazarUserService(
             logger.warn { "Tried to update user=$userId info, no such user found" }
             ApiException(ApiExceptions.USER_NOT_FOUND)
         }
-
+        logger.info { "Successfully updated user info for user = $userId" }
         return user.updateFrom(dto).toUserDtoResponse()
     }
 
