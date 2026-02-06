@@ -1,49 +1,54 @@
 # ==========================================
-# STAGE 1: Build the Application
+# Stage 1: Build the Application
 # ==========================================
-FROM gradle:9.2-jdk21-ubi AS builder
+FROM gradle:9.2.1-jdk21 AS builder
 
 WORKDIR /app
 
-# 1. Copy dependency definitions first (to cache dependencies)
+# Copy gradle configuration first to cache dependencies
 COPY build.gradle.kts settings.gradle.kts ./
-COPY gradle ./gradle
-
-# 2. Download dependencies.
-# This layer is cached unless you change your build.gradle.kts
 RUN gradle dependencies --no-daemon
-
-# 3. Copy the actual source code
 COPY src ./src
+RUN gradle bootJar --no-daemon
 
-# 4. Build the JAR (Skip tests to save time, assuming tests ran in CI)
-RUN gradle bootJar --no-daemon -x test
-
-# 5. Extract JAR layers (Spring Boot optimization)
-# This splits the JAR into dependencies vs your code
-RUN java -Djarmode=layertools -jar build/libs/*.jar extract
+# Extract layers for optimization
+# This splits the fat jar into dependencies, loader, and application code
+RUN mv build/libs/bazar-persona-*.jar build/libs/application.jar
+WORKDIR /app/build/libs
+RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # ==========================================
-# STAGE 2: Run the Application (The Tiny Image)
+# Stage 2: Create the Runtime Image
 # ==========================================
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25
 
-WORKDIR /app
+WORKDIR /application
 
-# 1. Create a non-root user for security (Alpine specific)
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+# Optimize Java memory usage for containers
+# MaxRAMPercentage=75.0 means the JVM will use 75% of the container's available memory limit
+# G1GC for better memory management and low pause times
+# UseCompressedOops reduces memory footprint by 20-30%
+# UseStringDeduplication saves memory on duplicate strings
+ENV JDK_JAVA_OPTIONS="-Dspring.aot.enabled=true \
+    -XX:MaxRAMPercentage=75.0 \
+    -XX:InitialRAMPercentage=50.0 \
+    -XX:+UseG1GC \
+    -XX:MaxGCPauseMillis=200 \
+    -XX:+UseCompressedOops \
+    -XX:+UseCompressedClassPointers \
+    -XX:+UseStringDeduplication \
+    -XX:+ExitOnOutOfMemoryError"
 
-# 2. Copy the extracted layers from the builder stage
-# This is more efficient than copying one fat JAR
-COPY --from=builder /app/dependencies/ ./
-COPY --from=builder /app/spring-boot-loader/ ./
-COPY --from=builder /app/snapshot-dependencies/ ./
-COPY --from=builder /app/application/ ./
+RUN groupadd --system spring && \
+    useradd --system --gid spring --no-create-home spring && \
+    chown -R spring:spring /application
 
-# 3. Expose port (Documentation only)
-EXPOSE 8080
+# Copy the layers extracted in Stage 1
+# Order matters: dependencies are least likely to change, application is most likely
+COPY --from=builder /app/build/libs/extracted/dependencies/ ./
+COPY --from=builder /app/build/libs/extracted/spring-boot-loader/ ./
+COPY --from=builder /app/build/libs/extracted/snapshot-dependencies/ ./
+COPY --from=builder /app/build/libs/extracted/application/ ./
 
-# 4. Use Spring Boot's JarLauncher
-# Note: For Spring Boot 3.2+, the path is org.springframework.boot.loader.launch.JarLauncher
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+
+ENTRYPOINT ["java", "-jar", "application.jar"]
