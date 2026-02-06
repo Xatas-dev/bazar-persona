@@ -7,20 +7,20 @@ WORKDIR /app
 
 # Copy gradle configuration first to cache dependencies
 COPY build.gradle.kts settings.gradle.kts ./
-
+RUN gradle dependencies --no-daemon
 COPY src ./src
 RUN gradle bootJar --no-daemon
 
 # Extract layers for optimization
 # This splits the fat jar into dependencies, loader, and application code
-RUN mv build/libs/bazar-persona-*.jar build/libs/application.jar
+RUN mv build/libs/bazar-space-*.jar build/libs/application.jar
 WORKDIR /app/build/libs
 RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # ==========================================
 # Stage 2: Create the Runtime Image
 # ==========================================
-FROM eclipse-temurin:25-jre-alpine
+FROM eclipse-temurin:25
 
 WORKDIR /application
 
@@ -37,14 +37,11 @@ ENV JDK_JAVA_OPTIONS="-Dspring.aot.enabled=true \
     -XX:+UseCompressedOops \
     -XX:+UseCompressedClassPointers \
     -XX:+UseStringDeduplication \
-    -XX:MetaspaceSize=128m \
-    -XX:MaxMetaspaceSize=256m \
-    -Xss256k \
     -XX:+ExitOnOutOfMemoryError"
 
-# Create a non-root user for security (best practice)
-RUN addgroup -S spring && adduser -S spring -G spring && chown -R spring:spring /application
-USER spring:spring
+RUN groupadd --system spring && \
+    useradd --system --gid spring --no-create-home spring && \
+    chown -R spring:spring /application
 
 # Copy the layers extracted in Stage 1
 # Order matters: dependencies are least likely to change, application is most likely
