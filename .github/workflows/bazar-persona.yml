@@ -1,0 +1,158 @@
+name: CI/CD Pipeline - bazar-persona
+
+permissions:
+  actions: read
+  contents: write
+  packages: read
+
+on:
+  push:
+    branches:
+      - master
+      - 'release/**'
+  pull_request:
+    branches:
+      - master
+      - 'release/**'
+  workflow_dispatch:
+
+env:
+  SERVICE_CONTEXT: ./
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/bazar-persona
+
+jobs:
+  pre_job:
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5
+        with:
+          skip_after_successful_duplicate: 'true'
+          do_not_skip: '["push", "pull_request", "workflow_dispatch", "schedule"]'
+
+  # CODE SCAN
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    permissions:
+      security-events: write
+      packages: read
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: java-kotlin
+            build-mode: autobuild
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:${{matrix.language}}"
+        env:
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker-build-and-publish:
+    needs: pre_job
+    runs-on: ubuntu-latest
+    outputs:
+      app-version: ${{ steps.get_version.outputs.APP_VERSION }}
+    if: |
+      ${{ needs.pre_job.outputs.should_skip != 'true' && (
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch') }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract Version
+        id: get_version
+        run: |
+          VERSION=$(grep "^version\s*=" build.gradle.kts | sed -E 's/.*version\s*=\s*"([^"]+)".*/\1/')
+          echo "Detected version: $VERSION"
+          echo "APP_VERSION=$VERSION" >> $GITHUB_ENV
+          echo "APP_VERSION=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Determine image tags and push flag
+        id: docker_pre_job
+        run: |
+          PUSH_DOCKER_IMAGE="false"
+          TAGS=""
+
+          if [[ "${{ github.event_name }}" == "push" ]] || [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            if [[ "${{ github.ref_name }}" == release/* ]]; then
+              TAGS="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }},${{ env.IMAGE_NAME }}:latest"
+              PUSH_DOCKER_IMAGE="true"
+            elif [[ "${{ github.ref_name }}" == "master" ]]; then
+              TAGS="${{ env.IMAGE_NAME }}:${{ env.APP_VERSION }}-SNAPSHOT"
+              PUSH_DOCKER_IMAGE="true"
+            fi
+          fi
+
+          echo "PUSH_DOCKER_IMAGE=$PUSH_DOCKER_IMAGE" >> $GITHUB_OUTPUT
+          echo "TAGS=$TAGS" >> $GITHUB_OUTPUT
+          echo "Push: $PUSH_DOCKER_IMAGE"
+          echo "Tags: $TAGS"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        if: steps.docker_pre_job.outputs.PUSH_DOCKER_IMAGE == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: ${{ steps.docker_pre_job.outputs.PUSH_DOCKER_IMAGE == 'true' }}
+          load: ${{ steps.docker_pre_job.outputs.PUSH_DOCKER_IMAGE != 'true' }}
+          tags: ${{ steps.docker_pre_job.outputs.TAGS }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }}
+            GITHUB_ACTOR=${{ github.actor }}
+
+  create-tag:
+    needs: docker-build-and-publish
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/release/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create or Update Git Tag
+        run: |
+          TAG_NAME="bpersona-${{ needs.docker-build-and-publish.outputs.app-version }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          echo "Force updating tag $TAG_NAME to point to current commit..."
+
+          git tag -fa "$TAG_NAME" -m "Auto-tag release $TAG_NAME"
+          git push origin -f "$TAG_NAME"
