@@ -1,0 +1,7 @@
+databaseChangeLog:
+  - include:
+      file: 20261026-00-0-remove-redundant-columns-bazar-user-table.sql
+      relativeToChangelogFile: true
+  - include:
+      file: 20261026-00-1-add-display-name-to-bazar-user-table.sql
+      relativeToChangelogFile: true

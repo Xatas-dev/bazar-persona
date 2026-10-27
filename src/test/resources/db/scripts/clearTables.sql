@@ -1,0 +1,1 @@
+truncate table bazar_user;

@@ -1,49 +1,32 @@
 # ==========================================
-# STAGE 1: Build the Application
+# Stage 1: Extract layered jar (no build)
 # ==========================================
-FROM gradle:9.2-jdk21-ubi AS builder
+FROM eclipse-temurin:25-jre AS builder
 
-WORKDIR /app
+WORKDIR /builder
 
-# 1. Copy dependency definitions first (to cache dependencies)
-COPY build.gradle.kts settings.gradle.kts ./
-COPY gradle ./gradle
+ARG JAR_FILE=build/libs/application.jar
+COPY ${JAR_FILE} application.jar
 
-# 2. Download dependencies.
-# This layer is cached unless you change your build.gradle.kts
-RUN gradle dependencies --no-daemon
-
-# 3. Copy the actual source code
-COPY src ./src
-
-# 4. Build the JAR (Skip tests to save time, assuming tests ran in CI)
-RUN gradle bootJar --no-daemon -x test
-
-# 5. Extract JAR layers (Spring Boot optimization)
-# This splits the JAR into dependencies vs your code
-RUN java -Djarmode=layertools -jar build/libs/*.jar extract
+RUN java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # ==========================================
-# STAGE 2: Run the Application (The Tiny Image)
+# Stage 2: Runtime image
 # ==========================================
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:25-jre
 
-WORKDIR /app
+WORKDIR /application
 
-# 1. Create a non-root user for security (Alpine specific)
-RUN addgroup -S spring && adduser -S spring -G spring
-USER spring:spring
+ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=80.0 -XX:+UseStringDeduplication"
 
-# 2. Copy the extracted layers from the builder stage
-# This is more efficient than copying one fat JAR
-COPY --from=builder /app/dependencies/ ./
-COPY --from=builder /app/spring-boot-loader/ ./
-COPY --from=builder /app/snapshot-dependencies/ ./
-COPY --from=builder /app/application/ ./
+RUN groupadd --system spring && \
+    useradd --system --gid spring --no-create-home spring && \
+    chown -R spring:spring /application
 
-# 3. Expose port (Documentation only)
-EXPOSE 8080
+COPY --from=builder /builder/extracted/dependencies/ ./
+COPY --from=builder /builder/extracted/spring-boot-loader/ ./
+COPY --from=builder /builder/extracted/snapshot-dependencies/ ./
+COPY --from=builder /builder/extracted/application/ ./
 
-# 4. Use Spring Boot's JarLauncher
-# Note: For Spring Boot 3.2+, the path is org.springframework.boot.loader.launch.JarLauncher
-ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher"]
+USER spring
+ENTRYPOINT ["java", "-jar", "application.jar"]
