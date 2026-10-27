@@ -57,8 +57,41 @@ paths:
           description: Invalid input data
         '401':
           description: Unauthorized
-
-
+  /v2/users/iam:
+    get:
+      tags:
+        - Bazar Users
+      summary: Get my profile
+      description: Retrieves the profile of the currently authenticated user based on the JWT token.
+      security:
+        - bearerAuth: [ ]
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDtoResponseV2'
+    patch:
+      tags:
+        - Bazar Users
+      summary: Update my profile
+      description: Update mutable fields of the current user's profile. All fields are optional.
+      security:
+        - bearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileDtoRequestV2'
+      responses:
+        '200':
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserDtoResponseV2'
   # ==========================================
   # 3. Batch Get Users (For Lists/Feeds)
   # ==========================================
@@ -83,6 +116,27 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UserDtoResponse'
+  /v2/users:
+    get:
+      tags:
+        - Bazar Users
+      summary: Get users
+      description: Retrieve a list of users based on filter criteria.
+      parameters:
+        - name: requestDto
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/GetUsersDtoRequest'
+      responses:
+        '200':
+          description: List of users found
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserDtoResponseV2'
 components:
   securitySchemes:
     bearerAuth:
@@ -102,14 +156,17 @@ components:
           maxLength: 128
           example: "merchant_king_99"
           description: Display name of the user
-        firstName:
+
+    UpdateProfileDtoRequestV2:
+      type: object
+      required:
+        - displayName
+      properties:
+        displayName:
           type: string
           maxLength: 128
-          example: "John"
-        lastName:
-          type: string
-          maxLength: 128
-          example: "Doe"
+          example: "merchant_king_99"
+          description: Display name of the user
 
     # --------------------------------------
     # Response Objects
@@ -156,7 +213,36 @@ components:
           type: string
           format: date-time
           example: "2023-10-05T15:30:00Z"
-    # The new wrapper object
+    UserDtoResponseV2:
+      type: object
+      required:
+        - id
+        - username
+        - displayName
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        username:
+          type: string
+          nullable: false
+          example: "merchant_king_99"
+        displayName:
+          type: string
+          nullable: false
+          example: "merchant_king_99"
+        createdAt:
+          type: string
+          format: date-time
+          example: "2023-10-01T12:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2023-10-05T15:30:00Z"
     GetUsersDtoRequest:
       type: object
       description: Filter criteria for fetching users
