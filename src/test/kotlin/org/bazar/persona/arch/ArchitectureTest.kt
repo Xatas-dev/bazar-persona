@@ -52,6 +52,7 @@ class ArchitectureTest {
             "org.jetbrains.annotations..",
             "java..",
             "kotlin..",
+            "io.github.oshai.kotlinlogging.."
         )
         .`as`(
             "Application layer may only depend on Domain, itself, JDK/Kotlin and " +

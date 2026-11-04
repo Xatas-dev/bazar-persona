@@ -5,7 +5,7 @@ import org.bazar.persona.application.shared.port.out.CurrentUserProvider
 import org.bazar.persona.application.shared.port.out.FileStoragePort
 import org.bazar.persona.application.user_avatar.port.out.ValidationAvatarPropertiesPort
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
-import org.bazar.persona.application.user.service.command.InitiateAvatarUploadCommand
+import org.bazar.persona.application.user.model.command.InitiateAvatarUploadCommand
 import org.bazar.persona.application.user.service.toGetUploadUrlRequest
 import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.domain.exceptions.InvalidAvatarFileExtensionException

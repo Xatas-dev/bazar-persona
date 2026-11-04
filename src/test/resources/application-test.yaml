@@ -1,4 +1,11 @@
-
+spring:
+  kafka:
+    security:
+      protocol: PLAINTEXT
+    properties:
+      security.protocol: PLAINTEXT
+      sasl.mechanism: ""
+      sasl.jaas.config: ""
 logging:
   level:
     org.springframework.jdbc.core.JdbcTemplate: DEBUG

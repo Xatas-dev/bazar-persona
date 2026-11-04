@@ -1,8 +1,8 @@
 package org.bazar.persona.adapter.inbound.user.kafka
 
-import org.bazar.persona.application.user.service.command.AvatarUploadStatus
-import org.bazar.persona.application.user.service.command.AvatarUploadValidationError
-import org.bazar.persona.application.user.service.command.CompleteAvatarUploadCommand
+import org.bazar.persona.application.user.model.command.AvatarUploadStatus
+import org.bazar.persona.application.user.model.command.AvatarUploadValidationError
+import org.bazar.persona.application.user.model.command.CompleteAvatarUploadCommand
 
 fun BazarFilesEvent.toCompleteAvatarUploadCommand() =
     CompleteAvatarUploadCommand(
