@@ -3,9 +3,9 @@ package org.bazar.persona.application.user_avatar.service
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.bazar.persona.application.shared.port.out.CompleteUploadRequest
 import org.bazar.persona.application.shared.port.out.FileStoragePort
-import org.bazar.persona.application.user.service.command.AvatarUploadStatus
-import org.bazar.persona.application.user.service.command.AvatarUploadValidationError
-import org.bazar.persona.application.user.service.command.CompleteAvatarUploadCommand
+import org.bazar.persona.application.user.model.command.AvatarUploadStatus
+import org.bazar.persona.application.user.model.command.AvatarUploadValidationError
+import org.bazar.persona.application.user.model.command.CompleteAvatarUploadCommand
 import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.domain.exceptions.UserAvatarNotFoundException
 import org.bazar.persona.domain.user_avatar.UserAvatar

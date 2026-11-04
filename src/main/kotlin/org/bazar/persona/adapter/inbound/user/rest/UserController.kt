@@ -15,6 +15,7 @@ import org.bazar.persona.model.UserDtoResponseV2
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import java.net.URI
+import kotlin.collections.map
 
 @RestController
 class UserController(
@@ -25,15 +26,15 @@ class UserController(
 ) : BazarUsersApi {
 
     override fun usersGet(requestDto: GetUsersDtoRequest?): ResponseEntity<List<UserDtoResponse>> {
-        return getUsersService.getUsersInfo(requestDto).toResponseEntity()
+        return getUsersService.getUsersInfo(requestDto.toGetUsersQuery()).map { it.toUserDtoResponse() }.toResponseEntity()
     }
 
     override fun usersIamGet(): ResponseEntity<UserDtoResponse> {
-        return iamGetUserService.execute().toResponseEntity()
+        return iamGetUserService.execute().toUserDtoResponse().toResponseEntity()
     }
 
     override fun usersIamPatch(updateProfileDtoRequest: UpdateProfileDtoRequest): ResponseEntity<UserDtoResponse> {
-        return iamPatchUserService.updateUserInfo(updateProfileDtoRequest).toResponseEntity()
+        return iamPatchUserService.updateUserInfo(updateProfileDtoRequest.toPatchUserProfileQuery()).toUserDtoResponse().toResponseEntity()
     }
 
     override fun v1UsersIamAvatarPost(avatarUploadRequestDto: AvatarUploadRequestDto): ResponseEntity<AvatarUploadTicketDtoResponse> {
@@ -42,15 +43,15 @@ class UserController(
     }
 
     override fun v2UsersGet(requestDto: GetUsersDtoRequest?): ResponseEntity<List<UserDtoResponseV2>> {
-        return getUsersService.getUsersInfoV2(requestDto).toResponseEntityV2()
+        return getUsersService.getUsersInfoV2(requestDto.toGetUsersQuery()).map { it.toUserDtoResponseV2() }.toResponseEntityV2()
     }
 
     override fun v2UsersIamGet(): ResponseEntity<UserDtoResponseV2> {
-        return iamGetUserService.executeV2().toResponseEntity()
+        return iamGetUserService.executeV2().toUserDtoResponseV2().toResponseEntity()
     }
 
     override fun v2UsersIamPatch(updateProfileDtoRequestV2: UpdateProfileDtoRequestV2): ResponseEntity<UserDtoResponseV2> {
-        return iamPatchUserService.updateUserInfoV2(updateProfileDtoRequestV2).toResponseEntity()
+        return iamPatchUserService.updateUserInfoV2(updateProfileDtoRequestV2.toPatchUserProfileQueryV2()).toUserDtoResponseV2().toResponseEntity()
     }
 
 

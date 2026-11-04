@@ -163,11 +163,10 @@ class BazarFilesEventConsumerTest : BaseIntegrationTest() {
         await atMost Duration.ofSeconds(30) withPollInterval Duration.ofMillis(500) untilAsserted {
             val avatar = userAvatarRepositoryPort.findAvatarByFileId(fileId)
             assertThat(avatar).isNotNull
-            assertThat(avatar!!.status).isNotEqualTo(UserAvatarStatus.ERROR)
+            assertThat(avatar!!.status).isEqualTo(UserAvatarStatus.ERROR)
         }
 
         val stored = userAvatarRepositoryPort.findAvatarByFileId(fileId)!!
-        assertThat(stored.status).isEqualTo(UserAvatarStatus.ERROR)
         assertThat(stored.isActive).isFalse()
         verify(fileStoragePort, never()).getDownloadLink(any())
     }

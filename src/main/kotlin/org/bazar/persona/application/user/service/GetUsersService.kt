@@ -1,13 +1,10 @@
 package org.bazar.persona.application.user.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
-import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
+import org.bazar.persona.application.user.model.UserWithAvatar
+import org.bazar.persona.application.user.model.query.GetUsersQuery
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
 import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
-import org.bazar.persona.model.GetUsersDtoRequest
-import org.bazar.persona.model.UserDtoResponse
-import org.bazar.persona.model.UserDtoResponseV2
 import org.springframework.stereotype.Service
 
 @Service
@@ -19,39 +16,40 @@ class GetUsersService(
     private val logger = KotlinLogging.logger { }
 
     @Deprecated("Deprecated since 1.0.1, will be removed in 1.0.3")
-    fun getUsersInfo(requestDto: GetUsersDtoRequest?): List<UserDtoResponse> {
-        if (requestDto == null || (requestDto.ids == null && requestDto.search == null))
+    fun getUsersInfo(requestDto: GetUsersQuery): List<UserWithAvatar> {
+        if (requestDto.userIds == null && requestDto.searchString == null)
             return emptyList()
 
-        if (requestDto.ids != null){
-            logger.info { "Get user request contain ids field, proceeding exact match by ids: ${requestDto.ids}" }
-            return userRepositoryPort.findByIdIn(requestDto.ids).map { it.toUserDtoResponse() }
+        if (requestDto.userIds != null) {
+            logger.info { "Get user request contain ids field, proceeding exact match by ids: ${requestDto.userIds}" }
+            return userRepositoryPort.findByIdIn(requestDto.userIds).map { it.toUserWithAvatar(null) }
         }
 
-        logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.search}" }
+        logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.searchString}" }
         return userRepositoryPort.findFirst10ByUserNameContainsIgnoreCase(
-            requestDto.search ?: ""
+            requestDto.searchString ?: ""
         )
-            .map { it.toUserDtoResponse() }
+            .map { it.toUserWithAvatar(null) }
     }
 
-    fun getUsersInfoV2(requestDto: GetUsersDtoRequest?): List<UserDtoResponseV2> {
-        if (requestDto == null || (requestDto.ids == null && requestDto.search == null))
+    fun getUsersInfoV2(requestDto: GetUsersQuery): List<UserWithAvatar> {
+        if (requestDto.userIds == null && requestDto.searchString == null)
             return emptyList()
 
 
-        val users = if (requestDto.ids != null){
-            logger.info { "Get user request contain ids field, proceeding exact match by ids: ${requestDto.ids}" }
-            userRepositoryPort.findByIdIn(requestDto.ids)
+        val users = if (requestDto.userIds != null) {
+            logger.info { "Get user request contain ids field, proceeding exact match by ids: ${requestDto.userIds}" }
+            userRepositoryPort.findByIdIn(requestDto.userIds)
         } else {
-            logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.search}" }
+            logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.searchString}" }
             userRepositoryPort.findFirst10ByUserNameContainsIgnoreCase(
-                requestDto.search ?: ""
+                requestDto.searchString ?: ""
             )
         }
 
-        val avatarsByUserId = userAvatarRepositoryPort.findActiveAvatarByUserIds(users.map { it.id }).associateBy { it.userId }
-        return users.map { it.toUserDtoResponseV2(avatarsByUserId[it.id]) }
+        val avatarsByUserId =
+            userAvatarRepositoryPort.findActiveAvatarByUserIds(users.map { it.id }).associateBy { it.userId }
+        return users.map { it.toUserWithAvatar(avatarsByUserId[it.id]) }
     }
 
 }

@@ -1,4 +1,4 @@
-package org.bazar.persona.application.user.service.command
+package org.bazar.persona.application.user.model.command
 
 data class InitiateAvatarUploadCommand(
     val fileName: String,
