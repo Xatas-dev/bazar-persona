@@ -15,6 +15,27 @@ spring:
         jwt:
           issuer-uri: ${KC_URL:http://localhost:9999/realms/bazar-realm}
           jwk-set-uri: ${KC_URL:http://localhost:9999/realms/bazar-realm}/protocol/openid-connect/certs
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    security:
+      protocol: SASL_PLAINTEXT
+    consumer:
+      group-id: bazar-persona
+      auto-offset-reset: earliest
+      enable-auto-commit: false
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JacksonJsonDeserializer
+      properties:
+        spring.json.value.default.type: org.bazar.persona.adapter.inbound.user.kafka.BazarFilesEvent
+    properties:
+      security.protocol: SASL_SSL
+      sasl.mechanism: SCRAM-SHA-512
+      sasl.jaas.config: >
+        org.apache.kafka.common.security.scram.ScramLoginModule required
+        username="${KAFKA_USERNAME}"
+        password="${KAFKA_PASSWORD}";
+    topics:
+      bazar-files-events: ${FILE_EVENTS_TOPIC:bazar.files.events}
 server:
   servlet:
     context-path: /api
@@ -26,3 +47,19 @@ logging:
   level:
     org:
       bazar: ${LOGGING_LEVEL:debug}
+
+http:
+  bazar-files-url: ${BAZAR_FILES_API_URL:http://localhost:8989/api}
+
+file-domain: bazar-persona
+validation:
+  avatar:
+    allowed_formats:
+      - svg
+      - png
+      - jpg
+      - jpeg
+    max_size_bytes: 5242880
+    allowed_mime_types:
+      - image/svg+xml
+      - image/png

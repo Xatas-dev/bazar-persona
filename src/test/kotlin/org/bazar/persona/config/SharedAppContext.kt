@@ -1,6 +1,7 @@
 package org.bazar.persona.config
 
 import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.kafka.ConfluentKafkaContainer
 import org.testcontainers.lifecycle.Startables
 import org.testcontainers.utility.DockerImageName
 import java.util.stream.Stream
@@ -12,8 +13,10 @@ object SharedAppContext {
             this.withDatabaseName("testDb").withUsername("test").withPassword("test")
         }
 
+    val kafka: ConfluentKafkaContainer = ConfluentKafkaContainer("confluentinc/cp-kafka")
+
     init {
-        Startables.deepStart(Stream.of(postgres)).join()
+        Startables.deepStart(Stream.of(postgres, kafka)).join()
     }
 
 }

@@ -1,12 +1,11 @@
-package org.bazar.persona.application.service
+package org.bazar.persona.application.user.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.bazar.persona.adapter.inbound.user.toUserDtoResponse
-import org.bazar.persona.adapter.inbound.user.toUserDtoResponseV2
+import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
+import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
-import org.bazar.persona.domain.exceptions.DomainException
-import org.bazar.persona.domain.exceptions.DomainExceptions
+import org.bazar.persona.domain.exceptions.UserNotFoundException
 import org.bazar.persona.model.UpdateProfileDtoRequest
 import org.bazar.persona.model.UpdateProfileDtoRequestV2
 import org.bazar.persona.model.UserDtoResponse
@@ -27,7 +26,7 @@ class IAMPatchUserService(
 
         val user = userRepositoryPort.findById(userId) ?: run {
             logger.warn { "Tried to update user=$userId info, no such user found" }
-            throw DomainException(DomainExceptions.USER_NOT_FOUND)
+            throw UserNotFoundException(userId)
         }
         if (dto.userName == null) {
             return user.toUserDtoResponse()
@@ -40,7 +39,7 @@ class IAMPatchUserService(
         val userId = currentUserProvider.id
         val user = userRepositoryPort.findById(userId) ?: run {
             logger.warn { "Tried to update user=$userId info, no such user found" }
-            throw DomainException(DomainExceptions.USER_NOT_FOUND)
+            throw UserNotFoundException(userId)
         }
         logger.info { "Successfully updated user info for user = $userId" }
         return userRepositoryPort.update(user.update(dto.displayName)).toUserDtoResponseV2()

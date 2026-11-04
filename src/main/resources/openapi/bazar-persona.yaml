@@ -92,6 +92,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserDtoResponseV2'
+  /v1/users/iam/avatar:
+    post:
+      tags:
+        - Bazar Users
+      summary: Initiate avatar upload
+      description: |
+        Requests a pre-signed URL to upload a new avatar directly to the file storage (S3).
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvatarUploadRequestDto'
+      responses:
+        '200':
+          description: Upload ticket generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AvatarUploadTicketDtoResponse'
   # ==========================================
   # 3. Batch Get Users (For Lists/Feeds)
   # ==========================================
@@ -168,6 +190,27 @@ components:
           example: "merchant_king_99"
           description: Display name of the user
 
+    AvatarUploadRequestDto:
+      type: object
+      required:
+        - fileName
+        - contentType
+        - sizeBytes
+      properties:
+        fileName:
+          type: string
+          example: "my_new_avatar.jpg"
+          description: Name of the file to be uploaded.
+        contentType:
+          type: string
+          example: "image/jpeg"
+          description: MIME type of the file. Must be an allowed image format (e.g., image/jpeg, image/png).
+        sizeBytes:
+          type: integer
+          format: int64
+          example: 1048576
+          description: Size of the file in bytes. Used for pre-validation before generating the link.
+
     # --------------------------------------
     # Response Objects
     # --------------------------------------
@@ -213,6 +256,18 @@ components:
           type: string
           format: date-time
           example: "2023-10-05T15:30:00Z"
+
+    # NEW: Avatar Upload Response Object
+    AvatarUploadTicketDtoResponse:
+      type: object
+      required:
+        - uploadUrl
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+          description: The pre-signed S3 URL to which the binary file must be PUT.
+          example: "https://s3.amazonaws.com/bazar-avatars/...?X-Amz-Signature=..."
     UserDtoResponseV2:
       type: object
       required:
