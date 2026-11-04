@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 
 @FeignClient(name = "bazar-files", url = $$"${http.bazar-files-url}")
-@Component
 interface BazarFilesFeignClient {
 
     @GetMapping("/v1/files/initiate-upload")
