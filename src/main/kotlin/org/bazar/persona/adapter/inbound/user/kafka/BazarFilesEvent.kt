@@ -11,7 +11,7 @@ data class BazarFilesEvent(
     val status: FileUploadStatus,
     val fileName: String,
     val contentType: String,
-    val errors: List<FileUploadError>
+    val errors: List<FileUploadError>?
 )
 
 data class FileUploadError(
