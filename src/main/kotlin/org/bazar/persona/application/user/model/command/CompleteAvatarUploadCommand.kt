@@ -5,7 +5,7 @@ import java.util.UUID
 data class CompleteAvatarUploadCommand (
     val fileId: UUID,
     val status: AvatarUploadStatus,
-    val validationErrors: List<AvatarUploadValidationError>
+    val validationErrors: List<AvatarUploadValidationError>?
 )
 
 enum class AvatarUploadStatus {

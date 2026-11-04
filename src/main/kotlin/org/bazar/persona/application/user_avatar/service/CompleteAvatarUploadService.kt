@@ -19,7 +19,7 @@ class CompleteAvatarUploadService(
     private val userAvatarRepositoryPort: UserAvatarRepositoryPort
 ) {
 
-    private val logger = KotlinLogging.logger {  }
+    private val logger = KotlinLogging.logger { }
 
     @Transactional
     fun execute(command: CompleteAvatarUploadCommand) {
@@ -51,9 +51,11 @@ class CompleteAvatarUploadService(
         return avatar.uploadSuccess(downloadLinkDto.url)
     }
 
-    private fun onFail(avatar: UserAvatar, errors: List<AvatarUploadValidationError>): UserAvatar {
+    private fun onFail(avatar: UserAvatar, errors: List<AvatarUploadValidationError>?): UserAvatar {
         logger.warn { "User avatar upload failed, fileId: ${avatar.fileId}, errors: $errors" }
-        return avatar.uploadFailed(errors.map { "${it.code}: ${it.description}" }.toString())
+        return avatar.uploadFailed(
+            errors?.map { "${it.code}: ${it.description}" }?.toString() ?: "Failed, but was no errors"
+        )
     }
 
 }

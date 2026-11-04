@@ -8,7 +8,7 @@ fun BazarFilesEvent.toCompleteAvatarUploadCommand() =
     CompleteAvatarUploadCommand(
         fileUuid,
         status.toAvatarUploadStatus(),
-        errors.map { it.toAvatarUploadValidationError() }
+        errors?.map { it.toAvatarUploadValidationError() }
     )
 
 
