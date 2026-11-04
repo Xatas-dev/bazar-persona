@@ -1,6 +1,8 @@
-package org.bazar.persona.adapter.inbound.user
+package org.bazar.persona.adapter.inbound.user.rest
 
+import org.bazar.persona.application.user.service.command.InitiateAvatarUploadCommand
 import org.bazar.persona.domain.user.User
+import org.bazar.persona.model.AvatarUploadRequestDto
 import org.bazar.persona.model.UserDtoResponse
 import org.bazar.persona.model.UserDtoResponseV2
 import org.springframework.http.ResponseEntity
@@ -39,3 +41,8 @@ fun List<UserDtoResponse>.toResponseEntity() =
 
 fun List<UserDtoResponseV2>.toResponseEntityV2() =
     ResponseEntity.ok(this)
+
+fun AvatarUploadRequestDto.toAvatarUpdateCommand() =
+    InitiateAvatarUploadCommand(
+        fileName,  contentType, sizeBytes
+    )

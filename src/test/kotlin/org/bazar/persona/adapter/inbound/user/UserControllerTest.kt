@@ -2,37 +2,50 @@ package org.bazar.persona.adapter.inbound.user
 
 import org.assertj.core.api.Assertions.assertThat
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
+import org.bazar.persona.application.shared.port.out.FileStoragePort
+import org.bazar.persona.application.shared.port.out.FileUploadLinkDto
+import org.bazar.persona.application.shared.port.out.GetUploadUrlRequest
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
 import org.bazar.persona.config.BaseWebTest
 import org.bazar.persona.domain.user.User
+import org.bazar.persona.model.AvatarUploadRequestDto
+import org.bazar.persona.model.AvatarUploadTicketDtoResponse
 import org.bazar.persona.model.UpdateProfileDtoRequestV2
-import org.bazar.persona.model.UserDtoResponse
 import org.bazar.persona.model.UserDtoResponseV2
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
+import org.mockito.kotlin.any
+import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.patch
+import org.springframework.test.web.servlet.post
 import tools.jackson.databind.ObjectMapper
-import java.util.UUID
+import java.util.*
 import javax.sql.DataSource
 
-class UserControllerTest: BaseWebTest() {
+class UserControllerTest : BaseWebTest() {
 
     @MockitoBean
     private lateinit var currentUserProvider: CurrentUserProvider
+
     @Autowired
     private lateinit var userRepositoryPort: UserRepositoryPort
+
     @Autowired
     private lateinit var dataSource: DataSource
+
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
+
     @Autowired
     private lateinit var objectMapper: ObjectMapper
+
+    @MockitoBean
+    private lateinit var filesStoragePort: FileStoragePort
 
     @Test
     @DisplayName("GET /v2/users/iam returns the current IAM user (happy path)")
@@ -40,8 +53,8 @@ class UserControllerTest: BaseWebTest() {
         //given
         val newUserId = UUID.randomUUID()
         val newUserUsername = "PAPA JOHN'S"
-        `when`(currentUserProvider.id).thenReturn(newUserId)
-        `when`(currentUserProvider.username).thenReturn(newUserUsername)
+        whenever(currentUserProvider.id).thenReturn(newUserId)
+        whenever(currentUserProvider.username).thenReturn(newUserUsername)
 
         //when
 
@@ -166,7 +179,7 @@ class UserControllerTest: BaseWebTest() {
 
         val savedUser = userRepositoryPort.insert(User(userId, "rand", "rand"))
 
-        `when`(currentUserProvider.id).thenReturn(userId)
+        whenever(currentUserProvider.id).thenReturn(userId)
 
         val request = UpdateProfileDtoRequestV2(displayName = newDisplayName)
         //when
@@ -182,6 +195,34 @@ class UserControllerTest: BaseWebTest() {
         val responseBody = objectMapper.readValue(response, UserDtoResponseV2::class.java)
         assertThat(responseBody.id).isEqualTo(userId)
         assertThat(responseBody.displayName).isEqualTo(newDisplayName)
+    }
+
+    @Test
+    fun postAvatarIam_happyPath() {
+        //given
+        val userId = UUID.randomUUID()
+        val fileId = UUID.randomUUID()
+        val uploadUrl = "https://s3.test/$fileId"
+        val savedUser = userRepositoryPort.insert(User(userId, "rand", "rand"))
+        val postAvatarRequest = AvatarUploadRequestDto("PORN.png", "image/png", 1234L)
+        whenever(currentUserProvider.id).thenReturn(userId)
+        whenever(filesStoragePort.initiateUpload(any()))
+            .thenReturn(FileUploadLinkDto(uploadUrl, fileId))
+        //when
+
+
+        val response = mockMvc.post("/v1/users/iam/avatar") {
+            accept = MediaType.APPLICATION_JSON
+            contentType = MediaType.APPLICATION_JSON
+            content = objectMapper.writeValueAsString(postAvatarRequest)
+        }
+            .andExpect {
+                status { isOk() }
+            }.andReturn().response.contentAsString
+        val responseBody = objectMapper.readValue(response, AvatarUploadTicketDtoResponse::class.java)
+
+        assertThat(responseBody.uploadUrl.toString()).isEqualTo(uploadUrl)
+
     }
 
 }

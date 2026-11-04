@@ -1,8 +1,8 @@
-package org.bazar.persona.application.service
+package org.bazar.persona.application.user.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.bazar.persona.adapter.inbound.user.toUserDtoResponse
-import org.bazar.persona.adapter.inbound.user.toUserDtoResponseV2
+import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
+import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
 import org.bazar.persona.domain.user.User

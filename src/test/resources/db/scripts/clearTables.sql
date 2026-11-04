@@ -1,1 +1,1 @@
-truncate table bazar_user;
+truncate table bazar_user, user_avatar;
