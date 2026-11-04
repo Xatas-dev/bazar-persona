@@ -4,10 +4,11 @@ import org.assertj.core.api.Assertions.assertThat
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
 import org.bazar.persona.application.shared.port.out.FileStoragePort
 import org.bazar.persona.application.shared.port.out.FileUploadLinkDto
-import org.bazar.persona.application.shared.port.out.GetUploadUrlRequest
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
+import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.config.BaseWebTest
 import org.bazar.persona.domain.user.User
+import org.bazar.persona.domain.user_avatar.UserAvatar
 import org.bazar.persona.model.AvatarUploadRequestDto
 import org.bazar.persona.model.AvatarUploadTicketDtoResponse
 import org.bazar.persona.model.UpdateProfileDtoRequestV2
@@ -36,6 +37,9 @@ class UserControllerTest : BaseWebTest() {
     private lateinit var userRepositoryPort: UserRepositoryPort
 
     @Autowired
+    private lateinit var userAvatarRepositoryPort: UserAvatarRepositoryPort
+
+    @Autowired
     private lateinit var dataSource: DataSource
 
     @Autowired
@@ -53,6 +57,7 @@ class UserControllerTest : BaseWebTest() {
         //given
         val newUserId = UUID.randomUUID()
         val newUserUsername = "PAPA JOHN'S"
+        val avatarUrl = "https://test.s3.download/123"
         whenever(currentUserProvider.id).thenReturn(newUserId)
         whenever(currentUserProvider.username).thenReturn(newUserUsername)
 
@@ -68,6 +73,12 @@ class UserControllerTest : BaseWebTest() {
         assertThat(responseBody.id).isEqualTo(newUserId)
         assertThat(responseBody.username).isEqualTo(newUserUsername)
         assertThat(responseBody.displayName).isEqualTo(newUserUsername)
+
+        //post avatar load check
+        userAvatarRepositoryPort.insert(
+            UserAvatar.createAvatarForUser(newUserId, UUID.randomUUID()).uploadSuccess(avatarUrl)
+        )
+        assertThat(responseBody.avatarUrl).isNull()
     }
 
     @Test
@@ -80,7 +91,18 @@ class UserControllerTest : BaseWebTest() {
         userRepositoryPort.insert(User(firstId, "papa_johns", "PAPA JOHN'S"))
         userRepositoryPort.insert(User(secondId, "galya_nosex", "GALYA nosex"))
         userRepositoryPort.insert(User(thirdId, "random_user", "Random User"))
-
+        val avatarUrl1 = "https://test.s3.download/123"
+        val avatarUrl2 = "https://test.s3.download/1234"
+        val avatarUrl3 = "https://test.s3.download/12345"
+        userAvatarRepositoryPort.insert(
+            UserAvatar.createAvatarForUser(firstId, UUID.randomUUID()).uploadSuccess(avatarUrl1)
+        )
+        userAvatarRepositoryPort.insert(
+            UserAvatar.createAvatarForUser(secondId, UUID.randomUUID()).uploadSuccess(avatarUrl2)
+        )
+        userAvatarRepositoryPort.insert(
+            UserAvatar.createAvatarForUser(thirdId, UUID.randomUUID()).uploadSuccess(avatarUrl3)
+        )
         //when
         val response = mockMvc.get("/v2/users") {
             param("ids", firstId.toString(), secondId.toString())
@@ -96,8 +118,10 @@ class UserControllerTest : BaseWebTest() {
         val usersById = responseBody.associateBy { it.id }
         assertThat(usersById[firstId]?.username).isEqualTo("papa_johns")
         assertThat(usersById[firstId]?.displayName).isEqualTo("PAPA JOHN'S")
+        assertThat(usersById[firstId]?.avatarUrl.toString()).isEqualTo(avatarUrl1)
         assertThat(usersById[secondId]?.username).isEqualTo("galya_nosex")
         assertThat(usersById[secondId]?.displayName).isEqualTo("GALYA nosex")
+        assertThat(usersById[secondId]?.avatarUrl.toString()).isEqualTo(avatarUrl2)
     }
 
     @Test
@@ -178,6 +202,10 @@ class UserControllerTest : BaseWebTest() {
         val newDisplayName = "GALYA nosex"
 
         val savedUser = userRepositoryPort.insert(User(userId, "rand", "rand"))
+        val avatarUrl = "https://test.s3.download/123"
+        userAvatarRepositoryPort.insert(
+            UserAvatar.createAvatarForUser(userId, UUID.randomUUID()).uploadSuccess(avatarUrl)
+        )
 
         whenever(currentUserProvider.id).thenReturn(userId)
 
@@ -195,6 +223,7 @@ class UserControllerTest : BaseWebTest() {
         val responseBody = objectMapper.readValue(response, UserDtoResponseV2::class.java)
         assertThat(responseBody.id).isEqualTo(userId)
         assertThat(responseBody.displayName).isEqualTo(newDisplayName)
+        assertThat(responseBody.avatarUrl.toString()).isEqualTo(avatarUrl)
     }
 
     @Test

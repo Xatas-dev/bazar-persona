@@ -4,6 +4,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
 import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
+import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.model.GetUsersDtoRequest
 import org.bazar.persona.model.UserDtoResponse
 import org.bazar.persona.model.UserDtoResponseV2
@@ -11,7 +12,8 @@ import org.springframework.stereotype.Service
 
 @Service
 class GetUsersService(
-    private val userRepositoryPort: UserRepositoryPort
+    private val userRepositoryPort: UserRepositoryPort,
+    private val userAvatarRepositoryPort: UserAvatarRepositoryPort
 ) {
 
     private val logger = KotlinLogging.logger { }
@@ -37,16 +39,19 @@ class GetUsersService(
         if (requestDto == null || (requestDto.ids == null && requestDto.search == null))
             return emptyList()
 
-        if (requestDto.ids != null){
+
+        val users = if (requestDto.ids != null){
             logger.info { "Get user request contain ids field, proceeding exact match by ids: ${requestDto.ids}" }
-            return userRepositoryPort.findByIdIn(requestDto.ids).map { it.toUserDtoResponseV2() }
+            userRepositoryPort.findByIdIn(requestDto.ids)
+        } else {
+            logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.search}" }
+            userRepositoryPort.findFirst10ByUserNameContainsIgnoreCase(
+                requestDto.search ?: ""
+            )
         }
 
-        logger.info { "Get user request does not contain ids field, proceeding contains match by: ${requestDto.search}" }
-        return userRepositoryPort.findFirst10ByUserNameContainsIgnoreCase(
-            requestDto.search ?: ""
-        )
-            .map { it.toUserDtoResponseV2() }
+        val avatarsByUserId = userAvatarRepositoryPort.findActiveAvatarByUserIds(users.map { it.id }).associateBy { it.userId }
+        return users.map { it.toUserDtoResponseV2(avatarsByUserId[it.id]) }
     }
 
 }

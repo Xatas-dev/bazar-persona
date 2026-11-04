@@ -9,7 +9,9 @@ interface UserAvatarRepositoryPort {
 
     fun update(avatar: UserAvatar): UserAvatar
 
-    fun findActiveAvatarByUserId(isActive: Boolean, userId: UUID): UserAvatar?
+    fun findActiveAvatarByUserId(userId: UUID): UserAvatar?
+
+    fun findActiveAvatarByUserIds(userIds: List<UUID>): List<UserAvatar>
 
     fun findAvatarByFileId(fileId: UUID): UserAvatar?
 

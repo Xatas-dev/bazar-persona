@@ -5,6 +5,7 @@ import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
 import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
+import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.domain.user.User
 import org.bazar.persona.model.UserDtoResponse
 import org.bazar.persona.model.UserDtoResponseV2
@@ -13,7 +14,8 @@ import org.springframework.stereotype.Service
 @Service
 class IAMGetUserService(
     private val userRepositoryPort: UserRepositoryPort,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    private val userAvatarRepositoryPort: UserAvatarRepositoryPort
 ) {
 
     private val logger = KotlinLogging.logger { }
@@ -37,7 +39,8 @@ class IAMGetUserService(
     fun executeV2(): UserDtoResponseV2 {
         val userId = currentUserProvider.id
         val username = currentUserProvider.username
-        return userRepositoryPort.findById(userId)?.toUserDtoResponseV2() ?: run {
+        val activeAvatar = userAvatarRepositoryPort.findActiveAvatarByUserId(userId)
+        return userRepositoryPort.findById(userId)?.toUserDtoResponseV2(activeAvatar) ?: run {
             logger.info { "Haven't found user, saving new from jwt token, userId = $userId" }
             userRepositoryPort.insert(
                 User(
@@ -45,7 +48,7 @@ class IAMGetUserService(
                     username = username,
                     displayName = username
                 )
-            ).toUserDtoResponseV2()
+            ).toUserDtoResponseV2(activeAvatar)
         }
     }
 

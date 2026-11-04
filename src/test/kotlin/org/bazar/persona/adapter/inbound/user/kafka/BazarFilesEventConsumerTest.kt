@@ -82,7 +82,7 @@ class BazarFilesEventConsumerTest : BaseIntegrationTest() {
 
     private fun awaitAvatar(userId: UUID, block: (UserAvatar?) -> Unit) {
         await atMost Duration.ofSeconds(30) withPollInterval Duration.ofMillis(500) untilAsserted {
-            block(userAvatarRepositoryPort.findActiveAvatarByUserId(true, userId))
+            block(userAvatarRepositoryPort.findActiveAvatarByUserId(userId))
         }
     }
 

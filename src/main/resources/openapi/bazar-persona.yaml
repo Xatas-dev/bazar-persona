@@ -290,6 +290,11 @@ components:
           type: string
           nullable: false
           example: "merchant_king_99"
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          example: "https://example.s3.file/1234"
         createdAt:
           type: string
           format: date-time

@@ -2,9 +2,11 @@ package org.bazar.persona.adapter.inbound.user.rest
 
 import org.bazar.persona.application.user.service.command.InitiateAvatarUploadCommand
 import org.bazar.persona.domain.user.User
+import org.bazar.persona.domain.user_avatar.UserAvatar
 import org.bazar.persona.model.AvatarUploadRequestDto
 import org.bazar.persona.model.UserDtoResponse
 import org.bazar.persona.model.UserDtoResponseV2
+import org.bazar.persona.utils.extensions.toUri
 import org.springframework.http.ResponseEntity
 
 fun User.toUserDtoResponse() =
@@ -19,13 +21,14 @@ fun User.toUserDtoResponse() =
         userPic = ""
     )
 
-fun User.toUserDtoResponseV2() =
+fun User.toUserDtoResponseV2(avatar: UserAvatar?) =
     UserDtoResponseV2(
         id = id,
         createdAt = createdAt,
         updatedAt = updatedAt,
         username = username,
-        displayName = displayName
+        displayName = displayName,
+        avatarUrl = avatar?.url?.toUri()
     )
 
 fun UserDtoResponse.toResponseEntity(): ResponseEntity<UserDtoResponse> {

@@ -5,6 +5,7 @@ import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
 import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
+import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.domain.exceptions.UserNotFoundException
 import org.bazar.persona.model.UpdateProfileDtoRequest
 import org.bazar.persona.model.UpdateProfileDtoRequestV2
@@ -15,7 +16,8 @@ import org.springframework.stereotype.Service
 @Service
 class IAMPatchUserService(
     private val userRepositoryPort: UserRepositoryPort,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    private val userAvatarRepositoryPort: UserAvatarRepositoryPort
 ) {
 
     private val logger = KotlinLogging.logger { }
@@ -37,12 +39,13 @@ class IAMPatchUserService(
 
     fun updateUserInfoV2(dto: UpdateProfileDtoRequestV2): UserDtoResponseV2 {
         val userId = currentUserProvider.id
+        val userAvatar = userAvatarRepositoryPort.findActiveAvatarByUserId(userId)
         val user = userRepositoryPort.findById(userId) ?: run {
             logger.warn { "Tried to update user=$userId info, no such user found" }
             throw UserNotFoundException(userId)
         }
         logger.info { "Successfully updated user info for user = $userId" }
-        return userRepositoryPort.update(user.update(dto.displayName)).toUserDtoResponseV2()
+        return userRepositoryPort.update(user.update(dto.displayName)).toUserDtoResponseV2(userAvatar)
     }
 
 }
