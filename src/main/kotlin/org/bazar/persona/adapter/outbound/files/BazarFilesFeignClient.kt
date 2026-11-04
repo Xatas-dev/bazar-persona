@@ -1,6 +1,8 @@
 package org.bazar.persona.adapter.outbound.files
 
+import feign.QueryMap
 import org.springframework.cloud.openfeign.FeignClient
+import org.springframework.cloud.openfeign.SpringQueryMap
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -10,7 +12,7 @@ interface BazarFilesFeignClient {
 
     @GetMapping("/v1/files/initiate-upload")
     fun initiateUpload(
-        @RequestParam request: InitiateUploadRequestDtoV1
+        @SpringQueryMap request: InitiateUploadRequestDtoV1
     ): InitiateUploadResponseDtoV1
 
     @GetMapping("/v1/files/initiate-download")
