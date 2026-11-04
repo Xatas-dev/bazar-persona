@@ -7,6 +7,7 @@ import org.bazar.persona.domain.exceptions.DomainException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
@@ -28,6 +29,19 @@ class SpaceRestControllerAdvice{
         return ResponseEntity
             .status(HttpStatus.INTERNAL_SERVER_ERROR)
             .body(ApiErrorResponse("INTERNAL_ERROR", "Internal server error"))
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    fun handleValidation(ex: MethodArgumentNotValidException): ResponseEntity<ApiErrorResponse> {
+        logger.warn(ex) { "Validation failed" }
+
+        val errors = ex.bindingResult.fieldErrors.associate { field ->
+            field.field to (field.defaultMessage ?: "Invalid value")
+        }
+
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(ApiErrorResponse("VALIDATION_ERROR", "Ошибка валидации"))
     }
 
 }

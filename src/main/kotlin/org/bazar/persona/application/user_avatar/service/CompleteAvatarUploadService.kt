@@ -41,7 +41,7 @@ class CompleteAvatarUploadService(
 
     private fun onSuccess(avatar: UserAvatar): UserAvatar {
         logger.info { "User avatar uploaded successfully, fileId: ${avatar.fileId}, user: ${avatar.userId}" }
-        val prevActiveAvatar = userAvatarRepositoryPort.findActiveAvatarByUserId(true , avatar.userId)
+        val prevActiveAvatar = userAvatarRepositoryPort.findActiveAvatarByUserId(avatar.userId)
         val downloadLinkDto = fileStoragePort.getDownloadLink(CompleteUploadRequest(avatar.fileId))
 
         if (prevActiveAvatar != null) {

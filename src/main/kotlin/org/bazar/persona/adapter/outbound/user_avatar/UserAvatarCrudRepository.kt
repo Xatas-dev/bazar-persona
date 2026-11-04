@@ -8,5 +8,7 @@ import java.util.UUID
 interface UserAvatarCrudRepository: CrudRepository<UserAvatarEntity, Long> {
     fun findByIsActiveAndUserId(isActive: Boolean, userId: UUID): UserAvatarEntity?
 
+    fun findByIsActiveAndUserIdIn(isActive: Boolean, userIds: List<UUID>): List<UserAvatarEntity>
+
     fun findByFileId(fileId: UUID): UserAvatarEntity?
 }

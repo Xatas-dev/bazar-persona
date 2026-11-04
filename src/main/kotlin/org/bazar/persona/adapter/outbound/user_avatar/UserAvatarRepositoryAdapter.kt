@@ -19,8 +19,12 @@ class UserAvatarRepositoryAdapter(
         return jdbcAggregateTemplate.update(avatar.toUserAvatarEntity()).toUserAvatar()
     }
 
-    override fun findActiveAvatarByUserId(isActive: Boolean, userId: UUID): UserAvatar? {
-        return userAvatarCrudRepository.findByIsActiveAndUserId(isActive, userId)?.toUserAvatar()
+    override fun findActiveAvatarByUserId(userId: UUID): UserAvatar? {
+        return userAvatarCrudRepository.findByIsActiveAndUserId(true, userId)?.toUserAvatar()
+    }
+
+    override fun findActiveAvatarByUserIds(userIds: List<UUID>): List<UserAvatar> {
+        return userAvatarCrudRepository.findByIsActiveAndUserIdIn(true, userIds).map { it.toUserAvatar() }
     }
 
     override fun findAvatarByFileId(fileId: UUID): UserAvatar? {
