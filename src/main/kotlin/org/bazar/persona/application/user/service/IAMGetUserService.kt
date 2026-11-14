@@ -1,10 +1,12 @@
-package org.bazar.persona.application.service
+package org.bazar.persona.application.user.service
 
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.bazar.persona.adapter.inbound.user.toUserDtoResponse
-import org.bazar.persona.adapter.inbound.user.toUserDtoResponseV2
+import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponse
+import org.bazar.persona.adapter.inbound.user.rest.toUserDtoResponseV2
 import org.bazar.persona.application.shared.port.out.CurrentUserProvider
+import org.bazar.persona.application.user.model.UserWithAvatar
 import org.bazar.persona.application.user.port.out.UserRepositoryPort
+import org.bazar.persona.application.user_avatar.port.out.UserAvatarRepositoryPort
 import org.bazar.persona.domain.user.User
 import org.bazar.persona.model.UserDtoResponse
 import org.bazar.persona.model.UserDtoResponseV2
@@ -13,16 +15,17 @@ import org.springframework.stereotype.Service
 @Service
 class IAMGetUserService(
     private val userRepositoryPort: UserRepositoryPort,
-    private val currentUserProvider: CurrentUserProvider
+    private val currentUserProvider: CurrentUserProvider,
+    private val userAvatarRepositoryPort: UserAvatarRepositoryPort
 ) {
 
     private val logger = KotlinLogging.logger { }
 
     @Deprecated("Deprecated since 1.0.1, will be removed in 1.0.3")
-    fun execute(): UserDtoResponse {
+    fun execute(): UserWithAvatar {
         val userId = currentUserProvider.id
         val username = currentUserProvider.username
-        return userRepositoryPort.findById(userId)?.toUserDtoResponse() ?: run {
+        return userRepositoryPort.findById(userId)?.toUserWithAvatar(null) ?: run {
             logger.info { "Haven't found user, saving new from jwt token, userId = $userId" }
             userRepositoryPort.insert(
                 User(
@@ -30,14 +33,15 @@ class IAMGetUserService(
                     username = username,
                     displayName = username
                 )
-            ).toUserDtoResponse()
+            ).toUserWithAvatar(null)
         }
     }
 
-    fun executeV2(): UserDtoResponseV2 {
+    fun executeV2(): UserWithAvatar {
         val userId = currentUserProvider.id
         val username = currentUserProvider.username
-        return userRepositoryPort.findById(userId)?.toUserDtoResponseV2() ?: run {
+        val activeAvatar = userAvatarRepositoryPort.findActiveAvatarByUserId(userId)
+        return userRepositoryPort.findById(userId)?.toUserWithAvatar(activeAvatar) ?: run {
             logger.info { "Haven't found user, saving new from jwt token, userId = $userId" }
             userRepositoryPort.insert(
                 User(
@@ -45,7 +49,7 @@ class IAMGetUserService(
                     username = username,
                     displayName = username
                 )
-            ).toUserDtoResponseV2()
+            ).toUserWithAvatar(activeAvatar)
         }
     }
 
