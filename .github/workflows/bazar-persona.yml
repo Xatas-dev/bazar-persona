@@ -188,7 +188,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Create or Update Git Tag
         run: |
-          TAG_NAME="bpersona-${{ needs.build.outputs.app-version }}"
+          TAG_NAME="bpersona-${{ needs.publish.outputs.app-version }}"
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -fa "$TAG_NAME" -m "Auto-tag release $TAG_NAME"
